@@ -1,6 +1,8 @@
 # aquarium-controller
 Arduino-based Aquarium controller
 
+[More information](http://destevez.net/electronics-projects/arduino-aquarium-controller/)
+
 Libraries required for the Arduino software:
 
 * Time, DS1307RTC from http://playground.arduino.cc/Code/Time
