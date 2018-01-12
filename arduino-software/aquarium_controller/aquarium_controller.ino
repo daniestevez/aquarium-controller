@@ -1,7 +1,10 @@
 #include <Event.h>
 #include <Timer.h>
 #include <Wire.h>
+
 #include <Time.h>
+
+#include <avr/wdt.h>
 
 #include "temperature.h"
 #include "feeding.h"
@@ -24,8 +27,10 @@ boolean notification() {
 }
 
 void setup(void) {
-  pinMode(2, INPUT_PULLUP); // unused pin
+  wdt_enable(WDTO_4S);
   
+  pinMode(2, INPUT_PULLUP); // unused pin
+
   boot_backlight();
   boot_interface();
   boot_clock(); // TODO: handle error
@@ -47,7 +52,9 @@ void setup(void) {
 
 void loop(void) {
   char input;
-    
+
+  wdt_reset();
+  
   timer.update();
   
   input = get_input();
