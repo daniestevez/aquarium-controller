@@ -1,4 +1,4 @@
-#include <U8glib.h>
+#include <U8g2lib.h>
 #include <Time.h>
 #include <Timezone.h>
 
@@ -33,7 +33,14 @@
 #define WIDTH 128
 #define HEIGHT 64
 
-U8GLIB_DOGM128 u8g(10, 9);
+//U8GLIB_DOGM128 u8g(10, 9);
+U8G2_ST7565_EA_DOGM128_1_4W_HW_SPI u8g(U8G2_R0, 10, 9);
+
+static char __buffer[50];
+
+#define drawStrP(x,y,z) {strcpy_P(__buffer, z); u8g.drawStr(x,y,__buffer); }
+inline int getStrWidthP(const char *x) {strcpy_P(__buffer, x); return u8g.getStrWidth(__buffer); }
+typedef uint u8g_uint_t;
 
 /* Functions to handle screen */
 struct screen_program {
@@ -274,7 +281,7 @@ static struct input set_feed_interval = { feed_interval_title, feed_interval_msg
 /** FEED DOSE **/
 #ifdef LANG_ES
 static const u8g_pgm_uint8_t feed_dose_0[] U8G_PROGMEM = "Introduzca nueva dosis";
-static const u8g_pgm_uint8_t feed_dose_1[] U8G_PROGMEM = "(en bolas)";
+static const u8g_pgm_uint8_t feed_dose_1[] U8G_PROGMEM = "(en piezas)";
 #else
 static const u8g_pgm_uint8_t feed_dose_0[] U8G_PROGMEM = "Enter new dose";
 static const u8g_pgm_uint8_t feed_dose_1[] U8G_PROGMEM = "(in pellets)";
@@ -287,6 +294,7 @@ void process_input(char input) {
 }
 
 void boot_interface() {
+  u8g.begin();
   picture_loop();
 }
 
@@ -310,14 +318,15 @@ static void input_draw() {
   u8g.setFont(u8g_font_6x10);
   u8g.setFontPosTop();
   
-  u8g.drawStrP(64 - u8g.getStrWidthP(input->title)/2, 0, input->title);
-  u8g.drawHLine(0, u8g.getFontLineSpacing(), WIDTH);
+  drawStrP(64 - getStrWidthP(input->title)/2, 0, input->title);
+  u8g.drawHLine(0, u8g.getAscent() - u8g.getDescent(), WIDTH);
   
   u8g.setFont(u8g_font_baby);
   u8g.setFontPosTop();
-  fls = u8g.getFontLineSpacing();
+  //fls = u8g.getFontLineSpacing();
+  fls = u8g.getAscent() - u8g.getDescent();
   for (msg = input->msgs, line = 2*fls; *msg != NULL; msg++, line += fls) {
-    u8g.drawStrP(0, line, *msg);
+    drawStrP(0, line, *msg);
   }
   
   u8g.drawHLine(5, HEIGHT - 10, WIDTH - 20);
@@ -368,24 +377,28 @@ static void menu_draw() {
   u8g.setFont(u8g_font_6x10);
   u8g.setFontPosTop();
   
-  u8g.drawStrP(64 - u8g.getStrWidthP(menu->title)/2, 0, menu->title);
-  list_start = u8g.getFontLineSpacing() + 1;
+  drawStrP(64 - getStrWidthP(menu->title)/2, 0, menu->title);
+//  list_start = u8g.getFontLineSpacing() + 1;
+  list_start = u8g.getAscent() - u8g.getDescent() + 1;
   u8g.drawHLine(0, list_start - 1, WIDTH);
   
   u8g.setFont(u8g_font_baby);
   u8g.setFontPosTop();
-  fls = u8g.getFontLineSpacing();
+//  fls = u8g.getFontLineSpacing();
+  fls = u8g.getAscent() - u8g.getDescent()+3;
   items_per_page = (HEIGHT - list_start)/fls;
   start =  (active_item/items_per_page)*items_per_page; // starting item
   for (item = menu->items + start, i = 0; *item != NULL && i < items_per_page; item++, i++) {
     if (start + i == active_item) {
       /* negative colour */
       u8g.drawBox(0, list_start + i*fls, WIDTH, fls - u8g.getFontDescent());
-      u8g.setDefaultBackgroundColor();
+      //u8g.setDefaultBackgroundColor();
+      u8g.setDrawColor(0);
     }
-    u8g.drawStrP(5, list_start + i*fls, *item);
+    drawStrP(5, list_start + i*fls + 3, *item);
     if (start + i == active_item) {
-      u8g.setDefaultForegroundColor();
+      //u8g.setDefaultForegroundColor();
+      u8g.setDrawColor(1);
     }
   };
   
@@ -446,9 +459,9 @@ static void boot_screen() {
   return;
 }
 
-static char time_str[20];
-static char date_str[20];
-static char temps[2][20];
+static char time_str[9];
+static char date_str[11];
+static char temps[2][8];
 
 static void prepare_principal() {
   time_t utc, t;
@@ -459,7 +472,7 @@ static void prepare_principal() {
   t = tz.toLocal(utc, &tcr);
   breakTime(t, tm);
   sprintf(time_str, "%02d:%02d:%02d", tm.Hour, tm.Minute, tm.Second);
-  sprintf(date_str, "%d/%d/%02d", tm.Day, tm.Month, (1970 + tm.Year) % 100);
+  sprintf(date_str, "%d/%d/%d", tm.Day, tm.Month, 1970 + tm.Year);
 
   temperature_to_str(temperatures[0], temps[0]);
   temperature_to_str(temperatures[1], temps[1]);
@@ -477,16 +490,16 @@ static void principal_draw() {
   u8g.setFont(u8g_font_6x10);
   u8g.setFontPosTop();
   u8g.drawStr(85, 5, temps[0]);
-  u8g.drawStrP(85 + u8g.getStrWidth(temps[0]), 5, degrees_label);
+  drawStrP(85 + u8g.getStrWidth(temps[0]), 5, degrees_label);
   
   u8g.drawStr(3, 52, time_str);
   
   u8g.setFont(u8g_font_baby);
   u8g.setFontPosTop();
-  u8g.drawStr(96, 14, temps[1]);
-  u8g.drawStrP(96 + u8g.getStrWidth(temps[1]), 14, degrees_label);
+  u8g.drawStr(98, 15, temps[1]);
+  drawStrP(98 + u8g.getStrWidth(temps[1]), 15, degrees_label);
   
-  u8g.drawStr(126 - u8g.getStrWidth(date_str), 53, date_str);
+  u8g.drawStr(124 - u8g.getStrWidth(date_str), 54, date_str);
   
   if (light_on) {
     u8g.drawBox(9, 7, 2, 2);
@@ -497,7 +510,7 @@ static void principal_draw() {
   
   if (need_feeding) {
 #ifdef LANG_ES
-    sprintf(buf, "Alimentar %d bolas y pulsar #", feeding_dose);
+    sprintf(buf, "Alimentar %d piezas y pulsar #", feeding_dose);
 #else
     sprintf(buf, "Feed %d pellets and press #", feeding_dose);
 #endif
@@ -693,12 +706,14 @@ static void therm_draw() {
   u8g.setFont(u8g_font_6x10);
   u8g.setFontPosTop();
   
-  u8g.drawStrP(64 - u8g.getStrWidthP(title_temperatures)/2, 0, title_temperatures);
-  list_start = u8g.getFontLineSpacing() + 1;
+  drawStrP(64 - getStrWidthP(title_temperatures)/2, 0, title_temperatures);
+  //list_start = u8g.getFontLineSpacing() + 1;
+  list_start = u8g.getAscent() - u8g.getDescent() + 1; 
   u8g.drawHLine(0, list_start - 1, WIDTH);
   
   u8g.setFontPosTop();
-  fls = u8g.getFontLineSpacing();
+//  fls = u8g.getFontLineSpacing();
+  fls = u8g.getAscent() - u8g.getDescent();
   for (i = 0; i < n_discovered; i++) {
     memcpy_P(buf, thermometer_label, 11);
     buf[11] = '0' + i;
@@ -706,7 +721,7 @@ static void therm_draw() {
     u8g.drawStr(0, list_start + i*fls, buf);
     temperature_to_str(discovered_temps[i], buf);
     u8g.drawStr(86, list_start + i*fls, buf);
-    u8g.drawStrP(86 + u8g.getStrWidth(buf), list_start + i*fls, degrees_label);
+    drawStrP(86 + u8g.getStrWidth(buf), list_start + i*fls, degrees_label);
   };
   
   return;
@@ -746,14 +761,16 @@ static void light_draw() {
   u8g.setFont(u8g_font_6x10);
   u8g.setFontPosTop();
   
-  u8g.drawStrP(64 - u8g.getStrWidthP(title_lights)/2, 0, title_lights);
-  list_start = u8g.getFontLineSpacing() + 1;
+  drawStrP(64 - getStrWidthP(title_lights)/2, 0, title_lights);
+  //list_start = u8g.getFontLineSpacing() + 1;
+  list_start = u8g.getAscent() - u8g.getDescent() + 1;
   u8g.drawHLine(0, list_start - 1, WIDTH);
   
   u8g.setFontPosTop();
-  fls = u8g.getFontLineSpacing();
-  u8g.drawStrP(0, list_start, on_label);
-  u8g.drawStrP(0, list_start + fls, off_label);
+  //fls = u8g.getFontLineSpacing();
+  fls = u8g.getAscent() - u8g.getDescent();
+  drawStrP(0, list_start, on_label);
+  drawStrP(0, list_start + fls, off_label);
   light_time(60, list_start, light_rise);
   light_time(60, list_start + fls, light_set);
   
@@ -786,14 +803,15 @@ static void temp_draw() {
   u8g.setFont(u8g_font_6x10);
   u8g.setFontPosTop();
   
-  u8g.drawStrP(64 - u8g.getStrWidthP(title_heater)/2, 0, title_heater);
-  list_start = u8g.getFontLineSpacing() + 1;
+  drawStrP(64 - getStrWidthP(title_heater)/2, 0, title_heater);
+  //list_start = u8g.getFontLineSpacing() + 1;
+  list_start = u8g.getAscent() - u8g.getDescent() + 1;
   u8g.drawHLine(0, list_start - 1, WIDTH);
   
   u8g.setFontPosTop();
   temperature_to_str(heater_temp, buf);
   u8g.drawStr(5, list_start, buf);
-  u8g.drawStrP(5 + u8g.getStrWidth(buf), list_start, degrees_label);
+  drawStrP(5 + u8g.getStrWidth(buf), list_start, degrees_label);
   
   return;
 }
@@ -803,7 +821,7 @@ static screen_program temp_program = { temp_draw, NULL, therm_handler };
 #ifdef LANG_ES
 static const u8g_pgm_uint8_t title_feed[] U8G_PROGMEM = "PROG. ALIMENTACI\323N";
 static const u8g_pgm_uint8_t interval_label[] U8G_PROGMEM = "Intervalo (horas)";
-static const u8g_pgm_uint8_t dose_label[] U8G_PROGMEM = "Dosis (bolas)";
+static const u8g_pgm_uint8_t dose_label[] U8G_PROGMEM = "Dosis (piezas)";
 #else
 static const u8g_pgm_uint8_t title_feed[] U8G_PROGMEM = "FEEDING SETTINGS";
 static const u8g_pgm_uint8_t interval_label[] U8G_PROGMEM = "Interval (hours)";
@@ -818,15 +836,17 @@ static void feed_draw() {
   u8g.setFont(u8g_font_6x10);
   u8g.setFontPosTop();
   
-  u8g.drawStrP(64 - u8g.getStrWidthP(title_feed)/2, 0, title_feed);
-  list_start = u8g.getFontLineSpacing() + 1;
+  drawStrP(64 - getStrWidthP(title_feed)/2, 0, title_feed);
+  //list_start = u8g.getFontLineSpacing() + 1;
+  list_start = u8g.getAscent() - u8g.getDescent() + 1;
   u8g.drawHLine(0, list_start - 1, WIDTH);
   
   u8g.setFont(u8g_font_baby);
   u8g.setFontPosTop();
-  fls = u8g.getFontLineSpacing();
-  u8g.drawStrP(0, list_start, interval_label);
-  u8g.drawStrP(0, list_start + fls, dose_label);
+  //fls = u8g.getFontLineSpacing();
+  fls = u8g.getAscent() - u8g.getDescent();
+  drawStrP(0, list_start, interval_label);
+  drawStrP(0, list_start + fls, dose_label);
   itoa(feeding_interval, buf, 10);
   u8g.drawStr(100, list_start, buf);
   itoa(feeding_dose, buf, 10);
