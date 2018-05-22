@@ -43,6 +43,10 @@ void read_heater(int *temp) {
 }
 
 static boolean heater() {
+  if (temperatures[WATER_SENSOR] < 0) {
+    /* temperature sensor is most likely failing. turn the heater off */
+    return false;
+  }
   if (heater_on && temperatures[WATER_SENSOR] >= heater_temp + HIGH_THRESHOLD)
     return false;
   else if (!heater_on && temperatures[WATER_SENSOR] <= heater_temp - LOW_THRESHOLD)
