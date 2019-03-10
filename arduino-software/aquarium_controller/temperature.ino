@@ -25,6 +25,7 @@
 OneWire ds(ONEWIRE_PIN);
 
 int temperatures[SENSORS];
+boolean temperatures_valid[SENSORS];
 
 static byte addresses[SENSORS][ADDR_SIZE];
 
@@ -38,16 +39,15 @@ int boot_temperatures() {
   int i;
   byte scratch[SCRATCHPAD_SIZE];
   
-  // TODO: error checking
-  
   read_all_addresses();
   
   convert_t_all();
   delay(CONVERSION_DELAY);
     
   for (i = 0; i < SENSORS; i++) {
-    read_scratchpad(addresses[i], scratch);
-    temperatures[i] = read_temperature(scratch);
+    if ((temperatures_valid[i] = read_scratchpad(addresses[i], scratch))) {
+      temperatures[i] = read_temperature(scratch);
+    }
   }
   
   return true;
