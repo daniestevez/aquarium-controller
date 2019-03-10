@@ -94,7 +94,7 @@ static const u8g_pgm_uint8_t main_menu_title[] U8G_PROGMEM = "MAIN MENU";
 static const u8g_pgm_uint8_t main_menu_items_0[] U8G_PROGMEM = "Clock";
 static const u8g_pgm_uint8_t main_menu_items_1[] U8G_PROGMEM = "Thermometers";
 static const u8g_pgm_uint8_t main_menu_items_2[] U8G_PROGMEM = "Lightning";
-static const u8g_pgm_uint8_t main_menu_items_3[] U8G_PROGMEM = "Temperatura";
+static const u8g_pgm_uint8_t main_menu_items_3[] U8G_PROGMEM = "Temperature";
 static const u8g_pgm_uint8_t main_menu_items_4[] U8G_PROGMEM = "Feeding";
 static const u8g_pgm_uint8_t main_menu_items_5[] U8G_PROGMEM = "Erase EEPROM";
 #endif
