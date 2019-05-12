@@ -145,7 +145,7 @@ boolean read_scratchpad(byte addr[], byte scratch[]) {
   }
   
   // check CRC
-  return OneWire::crc8(scratch, SCRATCHPAD_SIZE - 1) != scratch[SCRATCH_CRC];
+  return OneWire::crc8(scratch, SCRATCHPAD_SIZE - 1) == scratch[SCRATCH_CRC];
 }
 
 void write_sensor_address(int sensor, byte addr[]) {
